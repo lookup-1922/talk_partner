@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>話し相手</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <span class="status-dot" id="statusDot"></span>
+      <h1>話し相手</h1>
+      <span class="voice-toggle">
+        <label>
+          <input type="checkbox" id="voiceToggle" checked>
+          音声
+        </label>
+      </span>
+    </header>
+
+    <main class="stage">
+      <section class="log" id="log" aria-live="polite"></section>
+
+      <section class="portrait-wrap">
+        <div class="portrait" id="portrait">
+          <img id="portraitImg" src="/img/char_normal.svg" alt="話し相手のイラスト">
+        </div>
+      </section>
+    </main>
+
+    <form class="composer" id="composer">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="話しかけてみてください…（例: ただいま）"
+        autocomplete="off"
+        autofocus
+      >
+      <button type="submit">送信</button>
+    </form>
+  </div>
+
+  <audio id="audioPlayer" hidden></audio>
+  <script src="/app.js"></script>
+</body>
+</html>

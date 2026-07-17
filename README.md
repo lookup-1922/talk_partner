@@ -1,12 +1,98 @@
-# 話し相手プログラム（Go版）
+# 話し相手プログラム（Go版・GUI対応）
 
 ## 構成
 
-- `main.go` — 本体（起動処理・VOICEVOX連携）
+- `main.go` — エントリポイント（GUI/CLIの切り替え）
+- `server.go` — GUIモード: ローカルHTTPサーバー＋ブラウザ表示、静的ファイルのembed
+- `cli.go` — CLIモード（`--cli` 指定時のみ、従来のターミナル対話）
+- `dataset.go` — 応答データセットの型と読み込み
+- `match.go` — マッチング処理（BM25＋リランカーの2相パイプライン）
 - `bm25.go` — 第1相: BM25による候補の高速絞り込み
 - `rerank.go` — 第2相: リランカー（クロスエンコーダ役）による精査
-- `responses.json` — 応答データセット（trigger例文とreply）
+- `voicevox.go` — VOICEVOXとの通信（音声合成）
+- `responses.json` — 応答データセット（trigger例文・reply・expression）
+- `web/` — GUIのフロントエンド（HTML/CSS/JS・立ち絵SVG）
 - `go.mod` — モジュール定義（外部依存なし、標準ライブラリのみ）
+
+## GUIについて
+
+ネイティブGUIツールキット（Fyne, Wails等）はOpenGL/WebViewバインディングのために
+**CGOとC言語コンパイラ（Windowsだとgcc/MinGW）が別途必要**になることが多く、
+これまで遭遇した `venv` / `python3` のパス問題と同種の環境構築コストを
+再び持ち込んでしまいます。
+
+そこで、**Goの標準ライブラリだけでローカルにHTTPサーバーを立て、
+既定のブラウザをGUIとして使う**構成にしました。`go build` だけで完結し、
+追加のツールチェーンは一切不要です。
+
+構成:
+- 入力: テキストボックス
+- 出力: チャットログ（吹き出し）＋ 立ち絵イラスト（応答内容に応じて表情が変化）＋ 音声再生
+- 立ち絵はオリジナルの簡易SVGを4種類同梱（`web/img/char_*.svg`）。
+  好きなイラストに差し替える場合は同名ファイルを置き換えるだけでOKです。
+
+### 追加で実装したもの
+
+検討の結果、以下も必要と判断して実装済みです。
+
+- **音声の実再生**: 従来のCLI版は `output.wav` に保存するだけで再生していませんでした。
+  GUI版はブラウザの `<audio>` タグで実際に再生します（VOICEVOXの応答をGoがそのまま中継）。
+- **応答中のインジケータ**: VOICEVOXの音声合成には数百ms〜数秒かかるため、「……」という
+  一時的な吹き出しを表示してから応答に差し替えます。
+- **音声ON/OFFトグル**: VOICEVOXを起動していなくてもテキストだけで会話を続けられます。
+  接続に失敗した場合はヘッダーの丸いステータス表示が変化してお知らせします。
+- **表情差分**: `responses.json` の各エントリに `expression`（`normal` / `happy` / `sad` / `tired`）
+  を追加し、応答に応じて立ち絵が変わるようにしました。
+
+## データセットの編集
+
+`responses.json` の各エントリの `"reply"` を埋めてください。
+`"expression"` は立ち絵の表情指定です（`normal` / `happy` / `sad` / `tired`、省略時は `normal`）。
+
+```json
+{
+  "id": "greeting_home",
+  "triggers": ["ただいま", "帰ってきた", "帰宅した", "いま帰った"],
+  "note": "帰宅を出迎える一言",
+  "expression": "happy",
+  "reply": "ここにreplyを書く"
+}
+```
+
+`reply` が空欄のエントリは起動時に自動でスキップされ、件数が表示されます。
+
+## 実行方法（Windows / PowerShell）
+
+```powershell
+go run .
+```
+
+配布用に単一の実行ファイルにする場合:
+
+```powershell
+go build -o talkpartner.exe .
+.\talkpartner.exe
+```
+
+起動すると `http://localhost:8765` が既定のブラウザで自動的に開きます。
+開かない場合は手動でアクセスしてください。`responses.json` と `web/` フォルダは
+`main.go`（または `.exe`）と同じディレクトリに置いてください
+（`web/` の中身は実行ファイルに埋め込まれるので、実際には `.exe` と `responses.json` だけで動きます）。
+
+終了するには、サーバーを起動しているターミナルで `Ctrl+C` を押してください。
+
+### CLIモードで使いたい場合
+
+```powershell
+go run . --cli
+```
+
+## 音声を鳴らすには
+
+[VOICEVOX](https://voicevox.hiroshiba.jp) をダウンロードして起動しておくと、
+`http://localhost:50021` にローカルサーバーが立ち上がり、GUI上の音声トグルがONのとき
+応答のたびに音声が再生されます。起動していなくてもエラーにはならず、
+テキストのみで会話できます（ヘッダーのステータス表示で判別できます）。
 
 ## マッチングの仕組み（2相式）
 
@@ -28,52 +114,6 @@
    > `CrossEncoderScorer` インターフェースを介しているため、将来的に本物のニューラルモデル
    > （ONNX Runtime経由など）へ差し替えたくなった場合は `rerank.go` を実装し直すだけで済みます。
 
-3. どちらの相でもスコアが `rerankThreshold`（既定0.40）未満の場合はfallback応答を返します。
-   誤ヒットが多い／少なすぎる場合は `main.go` の `bm25TopK` と `rerankThreshold`、
+3. どちらの相でもスコアが `rerankThreshold`（既定0.40, `match.go`）未満の場合はfallback応答を返します。
+   誤ヒットが多い／少なすぎる場合は `match.go` の `bm25TopK` と `rerankThreshold`、
    `rerank.go` の重み付け（0.40 / 0.35 / 0.20 / 0.05）を調整してください。
-
-## データセットの編集
-
-`responses.json` の各エントリの `"reply"` を埋めてください。
-`triggers` には言い回しのバリエーションを複数入れられます（増減も自由です）。
-
-```json
-{
-  "id": "greeting_home",
-  "triggers": ["ただいま", "帰ってきた", "帰宅した", "いま帰った"],
-  "note": "帰宅を出迎える一言",
-  "reply": "ここにreplyを書く"
-}
-```
-
-`reply` が空欄のエントリは起動時に自動でスキップされ、件数が表示されます。
-
-## 実行方法（Windows / PowerShell）
-
-Go がインストールされていれば、ビルド不要でそのまま実行できます。
-
-```powershell
-go run main.go
-```
-
-配布用に単一の実行ファイルにしたい場合はビルドしてください（以後は `.exe` を叩くだけで動きます。`venv` や `pip` は不要です）。
-
-```powershell
-go build -o talkpartner.exe main.go
-.\talkpartner.exe
-```
-
-`responses.json` は `main.go`（または `.exe`）と同じディレクトリに置いてください。
-
-## 音声を鳴らすには
-
-[VOICEVOX](https://voicevox.hiroshiba.jp) をダウンロードして起動しておくと、
-`http://localhost:50021` にローカルサーバーが立ち上がり、応答のたびに `output.wav` が生成されます。
-起動していなくてもエラーにはならず、テキストのみで会話できます。
-
-## 拡張のヒント
-
-- マッチングは現状「正規化レーベンシュタイン距離」による簡易版です。
-  将来的に部報で検討されていたBM25＋クロスエンコーダの2相式に差し替える場合は、
-  `findBestResponse` と `similarity` を置き換えるだけで済むように分離してあります。
-- `speaker`（VOICEVOXの話者ID）は `main.go` の `defaultSpeakerID` で変更できます。

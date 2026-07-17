@@ -3,84 +3,98 @@
     "id": "greeting_home",
     "triggers": ["ただいま", "帰ってきた", "帰宅した", "いま帰った"],
     "note": "帰宅を出迎える一言",
-    "reply": ""
+    "expression": "happy",
+    "reply": "おかえり"
   },
   {
     "id": "greeting_morning",
     "triggers": ["おはよう", "おはよ", "起きた", "朝だ"],
     "note": "朝の挨拶、一日の始まりを気にかける",
+    "expression": "happy",
     "reply": ""
   },
   {
     "id": "greeting_night",
     "triggers": ["おやすみ", "おやすみなさい", "寝る", "そろそろ寝ようかな"],
     "note": "就寝前の一言、明日への気遣い",
+    "expression": "normal",
     "reply": ""
   },
   {
     "id": "tired",
     "triggers": ["疲れた", "つかれた", "しんどい", "もうへとへと", "働きすぎた"],
     "note": "ねぎらいの言葉",
+    "expression": "tired",
     "reply": ""
   },
   {
     "id": "hungry",
     "triggers": ["お腹すいた", "おなかすいた", "腹減った", "何か食べたい"],
     "note": "食事を気にかける／提案する",
+    "expression": "normal",
     "reply": ""
   },
   {
     "id": "sleepy",
     "triggers": ["眠い", "ねむい", "眠たい", "睡魔がすごい"],
     "note": "無理せず休むよう促す",
+    "expression": "tired",
     "reply": ""
   },
   {
     "id": "happy_news",
     "triggers": ["いいことあった", "嬉しいことがあった", "やったー", "うまくいった", "褒められた"],
     "note": "一緒に喜ぶ、詳しく聞きたがる",
+    "expression": "happy",
     "reply": ""
   },
   {
     "id": "sad_down",
     "triggers": ["つらい", "悲しい", "落ち込んでる", "うまくいかなかった", "しんどい気分"],
     "note": "寄り添う、否定しない、話を聞く姿勢",
+    "expression": "sad",
     "reply": ""
   },
   {
     "id": "bored",
     "triggers": ["暇", "ひま", "退屈", "何もすることがない"],
     "note": "軽い提案や話しかけ",
+    "expression": "normal",
     "reply": ""
   },
   {
     "id": "thanks",
     "triggers": ["ありがとう", "助かった", "感謝してる"],
     "note": "謙遜しつつ嬉しさを伝える",
+    "expression": "happy",
     "reply": ""
   },
   {
     "id": "want_to_vent",
     "triggers": ["聞いてほしいことがある", "話したいことがある", "ちょっと聞いて", "相談したい"],
     "note": "傾聴の姿勢、続きを促す",
+    "expression": "normal",
     "reply": ""
   },
   {
     "id": "busy",
     "triggers": ["忙しい", "今日は予定が詰まってる", "時間がない"],
     "note": "無理しないよう気遣う",
+    "expression": "tired",
     "reply": ""
   },
   {
     "id": "praise_partner",
     "triggers": ["君って優しいね", "話してて楽しい", "君がいてよかった"],
     "note": "照れつつ感謝する",
+    "expression": "happy",
     "reply": ""
   },
   {
     "id": "small_talk_weather",
     "triggers": ["今日暑いね", "今日寒いね", "いい天気だね", "雨降ってるね"],
     "note": "天気に共感し会話を広げる",
+    "expression": "normal",
     "reply": ""
   }
 ]
